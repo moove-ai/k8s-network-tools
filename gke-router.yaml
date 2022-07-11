@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: netcat
+spec:
+  containers:
+    - image: wbitt/network-multitool:latest
+      name: tools
+      command: ["/bin/bash", "-c"]
+      args:
+        - nc -l 4444
+      env:
+        - name: HTTP_PORT
+          value: "1180"
+        - name: HTTPS_PORT
+          value: "11443"
+      ports:
+      - containerPort: 1180
+        name: http-port
+      - containerPort: 11443
+        name: https-port
+      - containerPort: 4444
+        name: netcat
+      resources:
+        requests:
+          cpu: "200m"
+          memory: "128Mi"
+        limits:
+          cpu: "500m"
+          memory: "256Mi"
+      securityContext:
+        runAsUser: 0
+        capabilities:
+          add: ["NET_ADMIN"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: netcat
+  annotations:
+    cloud.google.com/load-balancer-type: "Internal"
+spec:
+  ports:
+    - name: netcat
+      port: 4444
+      targetPort: 4444
+  selector:
+    name: netcat
+  type: LoadBalancer
